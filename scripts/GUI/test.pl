@@ -1,19 +1,28 @@
 #!/usr/bin/perl -w
+
+#################################################################################
+#                                                                              	#
+#  Copyright (C) 2002,2003 Wim Vanderbauwhede. All rights reserved.             #
+#  This program is free software; you can redistribute it and/or modify it      #
+#  under the same terms as Perl itself.                                         #
+#                                                                              	#
+#################################################################################
+
+
 use strict;
 use Cwd;
-### -Creates a testbench if none exists 
-### -Otherwise runs the testbench
-### -Some useful flags would be:
-###       -Create without checking: -f
-###       -Provide list of parameters: -p
 
+### -Creates a testbench if none exists
+### -Otherwise runs the testbench
 
 my $current='';
-my $f=0;
-my $s=0;
-my $r=0;
-my $run=1;
-my $p=0;
+my $f=0; # file
+my $s=0; # show 
+my $r=0; # parse ?-)
+my $p=0; #plot
+
+my $run=1; #run
+
 if(@ARGV){
 $current=$ARGV[0];
 }
@@ -44,12 +53,17 @@ if($ARGV[1] eq '-on'){$p=1}
 if($ARGV[2] eq '-off'){$run=0}
 }
 
+my $design=$ARGV[@ARGV-1];
+if($design=~/^\-/){$design=''}
+my $up=($design)?'../':'';
+if($design eq $current){$current=''};
+
 #===============================================================================
 #
 # Get the perl object file 
 #
 
-chdir 'DeviceLibs/Objects';
+chdir "DeviceLibs/Objects/$design";
 
 my @objs=();
 if($current=~/test_.*\.pl/){
@@ -77,7 +91,7 @@ $current=~s/\.pl//;
 $current=~s/test_//;
 
 my $tb_template='';
-if ($f or (not -e "../../TestObj/test_$current.pl")) {
+if ($f or (not -e "$up../../TestObj/$design/test_$current.pl")) {
 print '-' x 60,"\n","\tCreating test_$current testbench ...\n",'-' x 60,"\n";
 
 my $paramlist='';
@@ -103,7 +117,7 @@ my $par0list='';
 my $outputs='';
 my $regs='';
 my $assigns='';
-my @pins=`egrep -e 'parameter|input|output|inout' ../../TestObj/${current}_default.v`;
+my @pins=`egrep -e 'parameter|input|output|inout' $up../../TestObj/$design/${current}_default.v`;
 foreach  (@pins) {
   s/\/\/.*$//;
   if(/output/) {
@@ -148,11 +162,13 @@ $outputs.=',$x.'.$out;
 $title.=" $out";
 }
 
+if(!$design){$design='Verilog'}
+
 $tb_template='#!/usr/bin/perl -w
 use strict;
-use lib "..";
+use lib "'.$up.'..";
 
-use DeviceLibs::Verilog;
+use DeviceLibs::'.$design.';
 
 ################################################################################
 
@@ -206,8 +222,8 @@ run("test_'.$current.'.v");
 
 ';
 } # created testbench
-chdir "../..";
-chdir "TestObj";
+chdir "$up../.."; #to root
+chdir "TestObj/$design";
 if ($f or (not -e "test_$current.pl")) {
 open(TB,">test_$current.pl");
 print TB $tb_template;

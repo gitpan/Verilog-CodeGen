@@ -1,26 +1,51 @@
 #!/usr/bin/perl -w
+
+#################################################################################
+#                                                                              	#
+#  Copyright (C) 2002,2003 Wim Vanderbauwhede. All rights reserved.             #
+#  This program is free software; you can redistribute it and/or modify it      #
+#  under the same terms as Perl itself.                                         #
+#                                                                              	#
+#################################################################################
+
 use strict;
 
+#This script is a simple glue between the GUI and v2html.
+
+#modify this if you're using a different browser
+my $browser="/usr/bin/galeon --geometry=400x600+10+10";
+
+#dillo is very fast, but no CSS support :-(
+#$browser="/usr/X11R6/bin/dillo";
+
+
 my $current='';
-my $s=0;
-my $d=0;
+
 if(@ARGV){
 $current=$ARGV[0];
 }
 
-if($current eq '-s') {
-$current=$ARGV[1]||'';
-$s=1;
-$d=0;
-}
-if($current eq '-sd') {
-$current=$ARGV[1]||'';
-$s=0;
-$d=1;
-}
+#my $s=0;
+#my $d=0;
+
+#if($current eq '-s') {
+#$current=$ARGV[1]||'';
+#$s=1;
+#$d=0;
+#}
+#if($current eq '-sd') {
+#$current=$ARGV[1]||'';
+#$s=0;
+#$d=1;
+#}
+
+my $design=$ARGV[@ARGV-1];
+if($design=~/^\-/){$design=''}
+my $up=($design)?'../':'';
 
 $current=~s/\.pl//;
-chdir 'TestObj';
+
+chdir "TestObj/$design";
 
 
 my @objs=`ls -1 -t *$current*.v`;
@@ -47,10 +72,9 @@ system("mkdir HTML");
 }
 system("v2html -o HTML $current ");
 print '-' x 60,"\n","\tLaunching browser ...\n",'-' x 60,"\n";
+
 #system("gnome-terminal -e 'lynx HTML/$current.html' &");
-#dillo is very fast, but no CSS support :-(
-#system("dillo  HTML/$current.html &");
-system("galeon --geometry=400x600+10+10 HTML/$current.html &");
+system("$browser HTML/$current.html &");
 
 
 } else {

@@ -1,5 +1,17 @@
 #!/usr/bin/perl -w
+
+#################################################################################
+#                                                                              	#
+#  Copyright (C) 2002,2003 Wim Vanderbauwhede. All rights reserved.             #
+#  This program is free software; you can redistribute it and/or modify it      #
+#  under the same terms as Perl itself.                                         #
+#                                                                              	#
+#################################################################################
+
 use strict;
+
+#-creates Perl object code if none exists
+#-otherwise parses code
 
 use Verilog::CodeGen;
 
@@ -20,10 +32,16 @@ $current=$ARGV[1]||'';
 $s=0;
 $d=1;
 }
-chdir 'DeviceLibs/Objects';
+my $design=$ARGV[@ARGV-1];
+if($design=~/^\-/){$design=''}
+my $up=($design)?'../':'';
+
+if($design eq $current){$current=''};
+
+chdir "DeviceLibs/Objects/$design";
 
 my @objs=();
-if($current=~/\w_.*\.pl/){
+if($current=~/\w_*.*\.pl/){
 push @objs,$current;
 } else {
 @objs=`ls -1 -t *$current*.pl`;
@@ -64,7 +82,7 @@ system("gnuclient -q $current");
 }
 
 if($d) {
-chdir '../../TestObj';
+chdir "$up../../TestObj";
 $current=~s/\.pl//;
 system("gnuclient ${current}_default.v");
 }

@@ -1,11 +1,11 @@
 package Verilog::CodeGen;
 
 use vars qw( $VERSION );
-$VERSION='0.9.1';
+$VERSION='0.9.2';
 
 #################################################################################
 #                                                                              	#
-#  Copyright (C) 2002 Wim Vanderbauwhede. All rights reserved.                  #
+#  Copyright (C) 2002,2003 Wim Vanderbauwhede. All rights reserved.                  #
 #  This program is free software; you can redistribute it and/or modify it      #
 #  under the same terms as Perl itself.                                         #
 #                                                                              	#
@@ -25,6 +25,13 @@ use strict;
 		&make_module
 		&create_code_template
 	       );
+
+
+#Modify this to use different compiler/simulator/viewer
+my $compiler="/usr/bin/iverilog";
+my $simulator="/usr/bin/vvp";
+my $vcdviewer="/usr/local/bin/gtkwave";
+
 # to store the module code for all modules
 my %modules;
 
@@ -306,8 +313,8 @@ $netlist=$printcfg{_fn};
 }
 #$netlist=~/\.v$/ || $netlist.='.v';
 if ($netlist){
-system("/usr/bin/iverilog -o${netlist}vp $netlist");
-system("/usr/bin/vvp ${netlist}vp");
+system("$compiler -o${netlist}vp $netlist");
+system("$simulator ${netlist}vp");
 } else {print STDERR "The run() method only works if the netlist is printed to a file.\n"}
 }
 #===============================================================================
@@ -324,7 +331,7 @@ $netlist=$printcfg{_fn};
 #$netlist=~/\.v$/ || $netlist.='.v';
 if (-e "${netlist}cd"){
 # send output to /dev/null to avoid blocking the socket!
-system("/usr/local/bin/gtkwave ${netlist}cd >& /dev/null &");
+system("$vcdviewer ${netlist}cd >& /dev/null &");
 
 } else {print STDERR "The plot() method only works if the netlist is printed to a file.\n"}
 }
@@ -465,11 +472,15 @@ if($design eq 'Verilog') {
 use Cwd;
 my $dir=cwd();
 $dir=~s/.*\///;
+#we assume that a chdir to the design dir has been done
 if($dir ne 'Objects') {$design=$dir; $up='../'}
 } else {  $up='../' }
 
 my $moduledir='DeviceLibs';
-if($skip eq ''){$moduledir='..'} else {
+
+if($skip eq ''){
+$moduledir=($design ne 'Verilog')?'../..':'../';
+} else {
 my @v=<$up../*.v>;
 if(@v) {
 system("cp $up../*.v ../DeviceLibs");
@@ -488,8 +499,8 @@ my $header="
 # by $me on $date
 #
 ";
-if (not -d "$up$moduledir"){mkdir  "$up$moduledir", 0755;}
-open(OUT,">$up$moduledir/$design.pm");
+if (($moduledir!~/\.\./)&& (not -d "$moduledir")){mkdir  "$moduledir", 0755;}
+open(OUT,">$moduledir/$design.pm"); # .. ,../.. or DeviceLibs
 my $modulepath=$INC{'Verilog/CodeGen.pm'};
 open(IN,"<$modulepath");
 while(<IN>) { 
@@ -579,8 +590,8 @@ my $test=new("$obj");
 my $code= $test->{code};
 
 print $code;
-
-chdir("$up../../TestObj");
+($design eq 'Verilog') && ($design='');
+chdir("$up../../TestObj/$design");
 
 open (VER,">${obj}_default.v");
 print VER $code;
@@ -652,7 +663,7 @@ B<Verilog::CodeGen> - Verilog code generator
 
 =head1 USAGE
 
-The most efficient way to use the code generator is using the GUI (scripts/gui.pl in the distribution). Alternatively, you can use the scripts that the GUI uses to do the work (in the scripts/GUI folder). If you want to make your own, follow the L<SYNOPSIS>.
+The most efficient way to use the code generator is using the GUI (L<scripts/gui.pl> in the distribution). Read the documentation in L<Verilog::CodeGen::Gui.pm>). Alternatively, you can use the scripts that the GUI uses to do the work (in the scripts/GUI folder). If you want to make your own, follow the L<SYNOPSIS>.
 
 Then edit the file YourModule.pl in the folder DeviceLibs/Objects/YourDesign. 
 
@@ -823,10 +834,6 @@ Put the GUI scripts in a module Gui.pm.
 =item *
 
 Separate the code for testing purposes from the module object code.
-
-=item *
-
-Improve the documentation
 
 =back
 
