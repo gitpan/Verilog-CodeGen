@@ -1,5 +1,9 @@
 Revision history for Perl extension Verilog::CodeGen.
 
+0.9.4  Fri May  9 15:52:10 BST 2003
+
+	-Forgot to change $VERSION to 0.9.3  
+
 0.9.3  Fri May  9 15:36:31 BST 2003
 
 	-The addidtions to handle multiple designs were broken. Fixed that.

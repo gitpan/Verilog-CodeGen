@@ -1,4 +1,4 @@
-Verilog/CodeGen version 0.9.3
+Verilog/CodeGen version 0.9.4
 =============================
 
 Provides an object-oriented environment to generate Verilog code for modules and testbenches. The Verilog::CodeGen module provides two functions, one to create a code template and another to create a Perl module which contains the device library. This module , DeviceLibs::YourDesign, provides the class methods and contains the objects for every Verilog module; the objects are created based on a fixed template.
