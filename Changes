@@ -1,0 +1,6 @@
+Revision history for Perl extension Verilog::CodeGen.
+
+0.9.1  Wed Nov  6 14:07:27 2002
+	- original version; created by h2xs 1.21 with options
+		-X -n Verilog::CodeGen
+
