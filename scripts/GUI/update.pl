@@ -23,9 +23,9 @@ $show=1;
 $show=0;
 }
 
-my $design=$ARGV[@ARGV-1];
+my $design=$ARGV[@ARGV-1]||'';
 if($design=~/^\-/){$design=''}
-my $up=($design)?'../':'';
+my $up=($design ne '')?'../':'';
 
 chdir "DeviceLibs/Objects/$design";
 

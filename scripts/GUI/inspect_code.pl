@@ -25,22 +25,8 @@ if(@ARGV){
 $current=$ARGV[0];
 }
 
-#my $s=0;
-#my $d=0;
-
-#if($current eq '-s') {
-#$current=$ARGV[1]||'';
-#$s=1;
-#$d=0;
-#}
-#if($current eq '-sd') {
-#$current=$ARGV[1]||'';
-#$s=0;
-#$d=1;
-#}
-
 my $design=$ARGV[@ARGV-1];
-if($design=~/^\-/){$design=''}
+if(($design=~/^\-/)||($design eq $current)){$design=''}
 my $up=($design)?'../':'';
 
 $current=~s/\.pl//;
@@ -59,8 +45,6 @@ print "$item";
  $current=shift @objs;
 chomp $current;
 } 
-
-
 
 print '-' x 60,"\n","\tConverting $current to HTML ...\n",'-' x 60,"\n";
 if( $current=~/\.v/) {

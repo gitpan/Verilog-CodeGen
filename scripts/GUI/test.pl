@@ -16,47 +16,41 @@ use Cwd;
 ### -Otherwise runs the testbench
 
 my $current='';
-my $f=0; # file
-my $s=0; # show 
-my $r=0; # parse ?-)
-my $p=0; #plot
+# by default, just open the tb for editing or create from template
+my $force=0; 
+my $show=0; 
+my $run=0; 
+my $plot=0;
+my $parse=0; 
 
-my $run=1; #run
 
 if(@ARGV){
 $current=$ARGV[0];
 }
 if($current eq '-f') {
 $current=$ARGV[1]||'';
-$s=0;
-$f=1;
+$force=1;
 }
-if($current eq '-s') {
-$current=$ARGV[1]||'';
-$f=0;
-$s=1;
-}
-if($current eq '-r') {
+if($current eq '-yes') {
 $current=$ARGV[3]||'';
-$f=0;
-$s=0;
-$r=1;
-if($ARGV[1] eq '-on'){$p=1}
-if($ARGV[2] eq '-off'){$run=0}
+$parse=1;
+$show=1;
+if($ARGV[1] eq '-on'){$plot=1}
+if($ARGV[2] eq '-on'){$run=1}
 }
-if($current eq '-rs') {
+if($current eq '-no') {
 $current=$ARGV[3]||'';
-$f=0;
-$s=1;
-$r=1;
-if($ARGV[1] eq '-on'){$p=1}
-if($ARGV[2] eq '-off'){$run=0}
+$parse=1;
+$show=0;
+if($ARGV[1] eq '-on'){$plot=1}
+if($ARGV[2] eq '-on'){$run=1}
 }
 
-my $design=$ARGV[@ARGV-1];
-if($design=~/^\-/){$design=''}
-my $up=($design)?'../':'';
-if($design eq $current){$current=''};
+my $design=$ARGV[@ARGV-1]||'';
+if($design=~/^\-/){$design=''};
+#if($design eq $current){$current=''};
+if($design eq $current){$design=''};
+my $up=($design ne '' )?'../':'';
 
 #===============================================================================
 #
@@ -91,7 +85,7 @@ $current=~s/\.pl//;
 $current=~s/test_//;
 
 my $tb_template='';
-if ($f or (not -e "$up../../TestObj/$design/test_$current.pl")) {
+if ($force or (not -e "$up../../TestObj/$design/test_$current.pl")) {
 print '-' x 60,"\n","\tCreating test_$current testbench ...\n",'-' x 60,"\n";
 
 my $paramlist='';
@@ -161,14 +155,15 @@ $b.=' \%b';
 $outputs.=',$x.'.$out;
 $title.=" $out";
 }
-
-if(!$design){$design='Verilog'}
+my $defaultdesign='Verilog';
+if($design){$defaultdesign=$design};
+#if(!$design){$design='Verilog'}
 
 $tb_template='#!/usr/bin/perl -w
 use strict;
 use lib "'.$up.'..";
 
-use DeviceLibs::'.$design.';
+use DeviceLibs::'.$defaultdesign.';
 
 ################################################################################
 
@@ -222,32 +217,36 @@ run("test_'.$current.'.v");
 
 ';
 } # created testbench
+
 chdir "$up../.."; #to root
-chdir "TestObj/$design";
-if ($f or (not -e "test_$current.pl")) {
+chdir "TestObj/$design" or die "$!: TestObj/$design";
+#Create testbench code
+if ($force or (not -e "test_$current.pl")) { # force overwrite or file did not exits
 open(TB,">test_$current.pl");
 print TB $tb_template;
 close TB;
-} 
-  if($s) {
-system("gnuclient test_$current.v &");
-  }
-  if($r) {
-print "\n",'-' x 60,"\n","\tParsing test_$current.pl testbench ...\n",'-' x 60,"\n";
-if($run) {#run
-if ($p) {# plot
-system("perl -p -i -e 'if(/dump/){s/^\\/+//};s/^\\#plot/plot/;s/^\\#run/run/;' test_$current.pl");
-} else {# no plot
-system("perl -p -i -e 'if(/dump/){s/^/\\/\\//};s/^plot/\\#plot/;s/^\\#run/run/;' test_$current.pl");
-}
-} else {#don't run
-system("perl -p -i -e 'if(/dump/){s/^/\\/\\//};s/^plot/\\#plot/;s/^run/\\#run/;' test_$current.pl");
-}
-exec("perl test_$current.pl");
-}
+}  
 
-  if(!$s && !$r) {
-print '-' x 60,"\n","\tDisplaying test_$current.pl testbench ...\n",'-' x 60,"\n";
+if($parse) {
+  print "\n",'-' x 60,"\n","\tParsing test_$current.pl testbench ...\n",'-' x 60,"\n";
+  if($run) {#run
+    if ($plot) {# plot
+      system("perl -p -i -e 'if(/dump/){s/^\\/+//};s/^\\#plot/plot/;s/^\\#run/run/;' test_$current.pl");
+    } else {# no plot
+      system("perl -p -i -e 'if(/dump/){s/^/\\/\\//};s/^plot/\\#plot/;s/^\\#run/run/;' test_$current.pl");
+    }
+  } else {#don't run
+    system("perl -p -i -e 'if(/dump/){s/^/\\/\\//};s/^plot/\\#plot/;s/^run/\\#run/;' test_$current.pl");
+  }
+  system("perl test_$current.pl");
+  
+  if($show) {
+    system("gnuclient test_$current.v &");
+  } elsif(!$run) {
+print `cat test_$current.v`; #cheap!
+}
+} else {
+#print '-' x 60,"\n","\tDisplaying test_$current.pl testbench ...\n",'-' x 60,"\n";
 system("gnuclient -q test_$current.pl &");
 }
 

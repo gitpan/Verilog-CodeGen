@@ -11,7 +11,7 @@ $VERSION='0.9.2';
 #                                                                              	#
 #################################################################################
 
-print STDOUT "//Package Verilog::CodeGen loaded\n";
+#print STDOUT "//Package Verilog::CodeGen loaded\n";
 
 use sigtrap qw(die untrapped normal-signals
                stack-trace any error-signals); 
@@ -23,6 +23,7 @@ use strict;
  @Verilog::CodeGen::ISA = qw(Exporter);
  @Verilog::CodeGen::EXPORT =qw(
 		&make_module
+		&create_objtest_code
 		&create_code_template
 	       );
 
@@ -506,6 +507,7 @@ open(IN,"<$modulepath");
 while(<IN>) { 
 s/Verilog::CodeGen/DeviceLibs::$design/;
 /\s+\&make_module/ && next;
+/\s+\&create_objtest_code/ && next;
 /\s+\&create_code_template/ && do {
 print OUT '
 		%modules
@@ -570,38 +572,6 @@ if($dir ne 'Objects') {$design=$dir; }
 
 #-------------------------------------------------------------------------------
 my $templ=<<'ENDTEMPL';
-#!/usr/bin/perl -w
-use strict;
-
-###############################################################################
-### This part makes it possible to test the object. ###
-my $obj='code_template';
-my $design='DesignName';
-my $up='';
-if(-d "../$design"){$up='../'}
-BEGIN {
-use Verilog::CodeGen;
-&make_module('code_template','DesignName');
-}
-use lib '.';
-use DeviceLibs::DesignName;
-
-my $test=new("$obj");
-my $code= $test->{code};
-
-print $code;
-($design eq 'Verilog') && ($design='');
-chdir("$up../../TestObj/$design");
-
-open (VER,">${obj}_default.v");
-print VER $code;
-close VER;
-
-package DeviceLibs::DesignName;
-
-###############################################################################
-### The actual object code starts here ###
-
 sub gen_code_template {
 
 #purpose
@@ -637,7 +607,69 @@ print OBJ $templ;
 close OBJ;
 
 } # END of create_code_template
+#===============================================================================
+sub create_objtest_code {
+my $objname=shift;
+my $design=shift||'Verilog';
 
+if($design eq 'Verilog') {
+use Cwd;
+my $dir=cwd();
+$dir=~s/.*\///;
+if($dir ne 'Objects') {$design=$dir; }
+} 
+
+#-------------------------------------------------------------------------------
+my $templ=<<'ENDHEADER';
+#!/usr/bin/perl -w
+use strict;
+
+###############################################################################
+### This part makes it possible to test the object. ###
+my $obj='code_template';
+my $design='DesignName';
+my $up='';
+if(-d "../$design"){$up='../'}
+BEGIN {
+use Verilog::CodeGen;
+&make_module('code_template','DesignName');
+}
+use lib '.';
+use DeviceLibs::DesignName;
+
+my $test=new("$obj");
+my $code= $test->{code};
+
+print $code;
+($design eq 'Verilog') && ($design='');
+chdir("$up../../TestObj/$design");
+
+open (VER,">${obj}_default.v");
+print VER $code;
+close VER;
+
+package DeviceLibs::DesignName;
+
+###############################################################################
+### The actual object code starts here ###
+
+ENDHEADER
+#-------------------------------------------------------------------------------
+
+ $templ=~s/code_template/$objname/gms;
+ $templ=~s/DesignName/$design/gms;
+
+open(OBJ,"<$objname.pl");
+while(<OBJ>){
+$templ.=$_;
+}
+close OBJ;
+
+open(OBJ,">$objname.tb");
+print OBJ $templ;
+close OBJ;
+
+} # END of create_objtest_code
 #===============================================================================
 ################################################################################
 =head1 NAME

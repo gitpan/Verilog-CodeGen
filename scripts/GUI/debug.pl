@@ -34,11 +34,13 @@ $d=1;
 }
 my $design=$ARGV[@ARGV-1];
 if($design=~/^\-/){$design=''}
+#my $up=($design)?'../':'';
+
+#if($design eq $current){$current=''};
+if($design eq $current){$design=''};
 my $up=($design)?'../':'';
 
-if($design eq $current){$current=''};
-
-chdir "DeviceLibs/Objects/$design";
+chdir "DeviceLibs/Objects/$design"; 
 
 my @objs=();
 if($current=~/\w_*.*\.pl/){
@@ -64,25 +66,22 @@ chomp( $current=shift @objs);
 
 print '-' x 60,"\n","\tParsing $current for debugging ...\n",'-' x 60,"\n";
 if( $current=~/\.pl/) {
-if(not (-e $current)) {
-
-#system("cp code_template.pl $current");
 my $objname=$current;
 $objname=~s/\.pl//;
+if(not (-e $current)) {
 &create_code_template($objname);
-#system("perl -p -i -e 's/code_template/$objname/g' $current");
-
+} else {
+&create_objtest_code($objname);
+system("perl ${objname}.tb");
+unlink "${objname}.tb";
 }
-#warn("perl $current");
-system("perl $current");
-
 
 if($s) {
 system("gnuclient -q $current");
 }
 
 if($d) {
-chdir "$up../../TestObj";
+chdir "$up../../TestObj/$design" or die "$!", `pwd`; 
 $current=~s/\.pl//;
 system("gnuclient ${current}_default.v");
 }

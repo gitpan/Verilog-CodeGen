@@ -24,11 +24,13 @@ open(VCG,'<.vcgrc');
 chomp($design=<VCG>);
 close VCG;
 }
+if($design eq 'Verilog'){$design=''}
 
 print STDERR "Starting UI ...";
 
 my $normal='-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-iso8859-1';
 my $bold='-adobe-helvetica-bold-r-normal-*-12-*-*-*-*-*-iso8859-1';
+my $boldsmall='-adobe-helvetica-bold-r-normal-*-10-*-*-*-*-*-iso8859-1';
 my $console='-misc-fixed-bold-r-normal-*-*-140-*-*-c-*-iso8859-1';
 my @matrix;
 #-------------------------------------------------------------------
@@ -124,6 +126,11 @@ my $image=  $matrix[0][3]->Photo('-file'=>'GUI/rectangle_power_perl.gif');
  $matrix[0][3]->configure('-image'=>$image);
 
 
+my $projectframe=$menu_bar->Frame('-background'=>'grey','-relief'=>'flat','-borderwidth'=>1,'-width'=>80)->grid('-row' => 0, '-column' => 1,'-columnspan'=>2,'-sticky'=>'w');
+my $project = $projectframe->Label ('-text'=>'Design:', '-font' => $normal, '-background' =>'grey')->pack('-side' => 'left','-anchor'=>'w', '-fill' => 'x','padx'=>1,'pady'=>1);
+$matrix[0][1] = $projectframe->Entry ('-width'   =>  15, '-font' => $normal,'foreground' => 'black','background' =>'white', )->pack('-side' => 'left','-anchor'=>'w', '-fill' => 'x','padx'=>1,'pady'=>1);
+my $projectbutton = $projectframe->Button('-font' => $bold,'background' =>'grey','-text' => 'Set', '-command' => \&set_design)->pack('-side' => 'left','-anchor'=>'w', 'padx'=>1,'pady'=>1);
+
 #==============================================================================
     # Device Object Code
  $matrix[1][0] = $menu_bar->Label ('-text'=>'Device Object Code', '-width'=>80, '-font' => $bold,'foreground' => 'black', '-background' =>'lightgrey',)->grid(
@@ -161,7 +168,7 @@ my $image=  $matrix[0][3]->Photo('-file'=>'GUI/rectangle_power_perl.gif');
  $matrix[6][0] = $menu_bar->Label ('-text'=>'Testbench Code', '-width' => 80, '-font' => $bold,'foreground' => 'black','background' =>'lightgrey',)->grid(
 '-row' => 6, '-column' => 0,'-columnspan'=>4);
 #------------------------------------------------------------------------------
- $matrix[7][3] = $menu_bar->Button('-width'=> 10, '-font' => $bold,'foreground' => 'black','background' =>'grey','-text' => 'Edit', '-command' => \&show_tb)->grid(
+ $matrix[7][3] = $menu_bar->Button('-width'=> 10, '-font' => $bold,'foreground' => 'black','background' =>'grey','-text' => 'Edit', '-command' => \&edit_tb)->grid(
 '-row' => 7 ,'-column'=>3,'-sticky'=>'w');
  $matrix[7][2] = $menu_bar->Entry ('-width'   =>  20, '-font' => $normal,'foreground' => 'black','background' =>'white',)->grid(
 '-row' => 7, '-column' =>2);
@@ -170,7 +177,7 @@ my $image=  $matrix[0][3]->Photo('-file'=>'GUI/rectangle_power_perl.gif');
  $matrix[7][0] = $menu_bar->Checkbutton ('-variable'   => \$overwrite, '-font' => $normal,'foreground' => 'black','background' =>'grey','-width' => 0)->grid(
 '-row' => 7, '-column' =>0,'-sticky'=>'e');
 #------------------------------------------------------------------------------
- $matrix[8][3] = $menu_bar->Button('-width'=> 10, '-font' => $bold,'foreground' => 'black','background' =>'grey','-text' => 'Parse', '-command' => \&run_tb )->grid(
+ $matrix[8][3] = $menu_bar->Button('-width'=> 10, '-font' => $bold,'foreground' => 'black','background' =>'grey','-text' => 'Parse', '-command' => \&parse_tb )->grid(
 '-row' => 8 ,'-column'=>3,'-sticky'=>'w');
 
  $matrix[8][1] = $menu_bar->Label ('-text'=>'Show result', '-font' => $bold,'foreground' => 'black','background' =>'grey','-width'=>20,'-relief'=>'flat','-borderwidth'=>1,'-anchor'=>'w',)->grid(
@@ -213,6 +220,12 @@ my $scroll=$text_frame->Scrollbar('-background'=>'grey','-width'=>10,'-command' 
 $text->configure('-yscrollcommand' => ['set', $scroll]);
 
   } #end of create_ui
+#-------------------------------------------------------------------
+sub set_design {
+$design=$matrix[0][1]->get();
+system("./GUI/create_design.pl $design 2>&1 | ./GUI/send_stdout.pl &");
+&listen();
+}
 #-------------------------------------------------------------------
 sub launch_xemacs {
 my $xe=shift;
@@ -260,7 +273,7 @@ system("./GUI/update.pl $f $design 2>&1 | ./GUI/send_stdout.pl &");
 #&write_output();
 }
 #-------------------------------------------------------------------
-sub show_tb {
+sub edit_tb {
 my $pattern= $matrix[7][2]->get();
 my $f='';
 if($overwrite==1){$f='-f'}
@@ -271,24 +284,21 @@ system("./GUI/test.pl $f $pattern $design 2>&1 | ./GUI/send_stdout.pl &");
 #&write_output();
 }
 #-------------------------------------------------------------------
-sub run_tb {
+sub parse_tb {
 
 my $pattern= $matrix[7][2]->get();
 my $p='-off';
 my $r='-off';
 if($plot){$p='-on'}
 if($run){$r='-on'}
-my $f='-r';
-if($showtb==1){$f='-rs'}
-#system("./GUI/test.pl $f $p $r $pattern  2>&1 | ./GUI/send_stdout.pl &");
-system("./GUI/test.pl $f $p $r $pattern $design 2>&1 | ./GUI/send_stdout.pl &");
+my $s='-no';
+if($showtb==1){$s='-yes'}
+
+system("./GUI/test.pl $s $p $r $pattern $design 2>&1 | ./GUI/send_stdout.pl &");
 &listen();
-#system("./GUI/test.pl $f $pattern >& tmp &");
-#&write_output();
+
 if($inspectcode==1) {
-#system("./GUI/inspect_code.pl $pattern &");#2>&1 | ./GUI/send_stdout.pl &");
-system("./GUI/inspect_code.pl $pattern $design &");#2>&1 | ./GUI/send_stdout.pl &");
-#&listen();
+system("./GUI/inspect_code.pl $pattern $design &");
 }
 }
 #-------------------------------------------------------------------

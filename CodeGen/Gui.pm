@@ -24,7 +24,7 @@ use strict;
 
 =head1 NAME
 
-B<Verilog code generator GUI>
+B<Verilog::Codegen::Gui> - Verilog code generator GUI
 
 =head1 SYNOPSIS
 
@@ -32,13 +32,19 @@ B<Verilog code generator GUI>
 
 The GUI and its utility scrips are in the C<scripts> folder of the distribution. 
 
-The design name is optional. If no design name is provided, the GUI will check the .vcgrc file for one. If this file does not exists, the design library module defaults to DeviceLibs/Verilog.pm and the objects will reside directly under DeviceLibs/Objects. Otherwise, the design library module will be DeviceLibs/YourDesign.pm  and the objects will reside under DeviceLibs/YourDesign/Objects.
+The design name is optional. If no design name is provided, the GUI will check the .vcgrc file for one. If this file does not exists, the design library module defaults to DeviceLibs/Verilog.pm and the objects will reside directly under DeviceLibs/Objects. Otherwise, the design library module will be DeviceLibs/YourDesign.pm  and the objects will reside under DeviceLibs/YourDesign/Objects. You can also set the design name via the GUI.
 
 =head1 USAGE
 
 The GUI is very simple to use. A short manual:
 
 To create, test and run Verilog code using the Verilog::CodeGen GUI:
+
+=head2 0. Choose your design.
+
+In the B<Design> text entry field, type the full name of the design. Click B<Set>. 
+
+If the design does not exist, it will be created, that is, an empty structure with skeleton files will be created. Otherwise, the design will be set to the entered value.
 
 =head2 1. Create or edit the Device Object.
 
